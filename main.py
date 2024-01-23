@@ -1,5 +1,3 @@
-import pygame
-
 class Jeu:
     CARDS_PER_PLAYERS = 5
     FUSE_TOKEN = 3
