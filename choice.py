@@ -9,7 +9,7 @@ pioche = []
 
 
 for couleur in couleurs_choisis:
-    table[couleur] = 0
+    track[couleur] = 0
 
     pioche += 3*[couleur+'_1'] + 2*[(couleur,2)] + 2*[(couleur,3)] + 2*[(couleur,4)] + [(couleur,5)]
 
