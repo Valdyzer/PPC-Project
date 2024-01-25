@@ -11,5 +11,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
     client_socket.sendall(pseudo.encode())
     ready = "no"
     while True:
-        #if ready.lower() != "no"
-        pass
+        if ready.lower() == "no":
+            ready = input("Are you ready?").lower()
+            client_socket.sendall(ready.encode())
