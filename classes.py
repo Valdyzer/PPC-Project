@@ -3,8 +3,10 @@ class Jeu:
     FUSE_TOKEN = 3
     info_token = 3      # initialement 3 car --> info_token = nb_players + 3
     nb_players = 0
+    players = []
     nb_cards = 0        # initialement 0 car --> nb_cards = nb_colors * 10
     nb_colors = 0       # initialement 0 car --> nb_colors = nb_players
+    pioche = []
     state = 'Menu'
 
    # table = { 'rouge':0, 'bleu':0, 'vert':0, 'blanc':0, 'jaune':0 }
@@ -14,8 +16,6 @@ class Joueur:
     pseudo = ""
     deck = []
     order = 0
+    indices = []
 
 
-new_game = Jeu()
-new_game.nb_joueur = 3
-print(new_game.info_token)
