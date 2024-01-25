@@ -4,7 +4,7 @@ COULEUR = ["ROUGE", "BLEU", "VERT", "JAUNE", "BLANC"]
 
 nb_joueur = int(input())
 couleurs_choisis = random.sample(COULEUR, nb_joueur)
-table = {}
+track = {}
 pioche = []
 
 
@@ -15,5 +15,5 @@ for couleur in couleurs_choisis:
 
 
 print(couleurs_choisis)
-print(table)
+print(track)
 print(pioche)
