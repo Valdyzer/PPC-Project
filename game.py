@@ -2,6 +2,7 @@ import socket
 import random
 from multiprocessing import Process, Value, Manager
 import pickle
+import time
 
 COULEURS = ["ROUGE", "BLEU", "VERT", "JAUNE", "BLANC"]
 
@@ -10,6 +11,7 @@ class Game:
         self.CARDS_PER_PLAYER = 5
         self.fuse_token = 3
         self.info_token = 0
+        self.tour_nb = Value("i",-1)
         self.track = manager.dict()
         self.pioche = manager.list()
         self.all_players_cards = manager.dict()
@@ -40,8 +42,10 @@ class Game:
     def add_ready_player(self, player_name, s):
         self.ready_player_list.append((player_name, s))
 
+
     def set_up_server(self):
         self.port = int(input("Input the game port: "))
+
 
     def set_up_game(self):
         couleurs_choisis = random.sample(COULEURS, self.nb_players.value)
@@ -57,22 +61,42 @@ class Game:
         for player in self.ready_player_list:
             cards_to_give = []
 
-            for i in range(5):
+            for i in range(self.CARDS_PER_PLAYER):
                 cards_to_give.append(self.distribute_cards())
 
             self.all_players_cards[player[0]] = cards_to_give
 
-            print(f"To player {player[0]} are given: {cards_to_give}")
+            print(f"To player {player[0]} are given: {cards_to_give}.")
 
 
-                
+        self.prochain_tour()
+
+
+        
+
 
     def distribute_cards(self):
-
         if len(self.pioche) > 0:
             card_picked = self.pioche.pop()
-            
             return card_picked 
+
+
+    def prochain_tour(self):
+        self.tour_nb.value = (self.tour_nb.value + 1) % self.nb_players.value
+        playing_player = self.ready_player_list[self.tour_nb.value][0]
+        playing_player_socket = self.ready_player_list[self.tour_nb.value][1]
+        print(f"C'est le tour de {playing_player}.")
+
+        message_a_envoye = "Les piles présentes sur la table sont: "
+        for couleur, nb in self.track.items():
+            message_a_envoye += f"{couleur} -> {nb}   "
+
+        message_a_envoye += "\nTes actions possibles sont view (regarder les cartes de tous les joueurs), play (poser une carte), hint (give a hint to a player) and lookup (look at your list of hints)."
+        playing_player_socket.sendall(message_a_envoye.encode())
+
+
+
+
     
 
 
@@ -88,6 +112,7 @@ def client_handler(s, a):
 
         player_action = "not empty"
 
+        #ready code
         while player_action != "":
 
             player_action = s.recv(1024).decode()
@@ -97,15 +122,21 @@ def client_handler(s, a):
                 game.add_ready_player(client_playername,s)
                 break
 
-
+        #during game code
         while player_action != "":
-            print("b")
             player_action = s.recv(1024).decode()
 
+            #regade les mains de tous les joueurs
             if(player_action.lower() == "view"):
-                print(f"Sending info to {client_playername}")
-                sent_info = f"{game.all_players_cards[client_playername]}".encode()
+                print(f"Sending view info to {client_playername}")
+                info_string = ""
+                for player, cards in game.all_players_cards.items():
+                    if player != client_playername:
+                        info_string += f"{player} hase these cards {game.all_players_cards[player]}.\n"
+                sent_info = info_string.encode()
                 s.sendall(sent_info)
+
+            game.prochain_tour()
 
                 
 
@@ -129,10 +160,6 @@ with Manager() as manager:
 
         while game.game_status == "WaitingForPlayers":
             if len(game.ready_player_list) == len(game.player_list) and len(game.player_list) > 1:
-                # print(f"{game.player_list}               {game.ready_player_list}")
-                # print(f"{len(game.ready_player_list)}               {len(game.player_list)}")
-                # print(f"{len(game.ready_player_list) == len(game.player_list)}")
-                # print(f"{len(game.ready_player_list) == len(game.player_list) and len(game.player_list) > 1}")
                 game.game_status = "GameLoop"
 
             try:
@@ -147,7 +174,6 @@ with Manager() as manager:
                 pass
 
         game.set_up_game()
-        print(game.all_players_cards)
 
         while True:
             pass

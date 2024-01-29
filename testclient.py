@@ -18,8 +18,14 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
     
     while True:
 
-        action = input("Action?").lower()
-        client_socket.sendall(action.encode())
 
         received_info = client_socket.recv(1024)
         print(received_info.decode())
+        player_turn = True
+        
+        while player_turn:
+
+            action = input("Action?").lower()
+            client_socket.sendall(action.encode())
+            received_info = client_socket.recv(1024)
+            print(received_info.decode())
