@@ -92,7 +92,7 @@ class Game:
         for couleur, nb in self.track.items():
             message_a_envoye += f"{couleur} -> {nb}   "
 
-        message_a_envoye += "\nTes actions possibles sont view (regarder les cartes de tous les joueurs), play (poser une carte), hint (give a hint to a player) and lookup (look at your list of hints)."
+        message_a_envoye += "\nTes actions possibles sont : \n - view (regarder les cartes de tous les joueurs),\n - play (poser une carte),\n - hint (donner un indice à un joueur),\n - lookup (consulter les indices)."
         playing_player_socket.sendall(message_a_envoye.encode())
 
 
