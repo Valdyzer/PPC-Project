@@ -26,6 +26,15 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         while player_turn:
 
             action = input("Action?").lower()
-            client_socket.sendall(action.encode())
-            received_info = client_socket.recv(1024)
-            print(received_info.decode())
+
+            if action == "view":
+                client_socket.sendall(action.encode())
+                received_info = client_socket.recv(1024)
+                print(received_info.decode())
+
+            elif "play" in action:
+                client_socket.sendall(action.encode())
+                player_turn = False
+
+            else:
+                continue

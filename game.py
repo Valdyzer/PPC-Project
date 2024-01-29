@@ -9,7 +9,7 @@ COULEURS = ["ROUGE", "BLEU", "VERT", "JAUNE", "BLANC"]
 class Game:
     def __init__(self, manager):
         self.CARDS_PER_PLAYER = 5
-        self.fuse_token = 3
+        self.fuse_token = Value("i",3)
         self.info_token = 0
         self.tour_nb = Value("i",-1)
         self.track = manager.dict()
@@ -59,26 +59,27 @@ class Game:
         random.shuffle(self.pioche)
 
         for player in self.ready_player_list:
-            cards_to_give = []
+            self.all_players_cards[player[0]] = []
 
             for i in range(self.CARDS_PER_PLAYER):
-                cards_to_give.append(self.distribute_cards())
-
-            self.all_players_cards[player[0]] = cards_to_give
-
-            print(f"To player {player[0]} are given: {cards_to_give}.")
+                self.distribute_cards(player[0])
 
 
+            print(f"To player {player[0]} are given: {self.all_players_cards[player[0]]}.")
+
+        print(self.all_players_cards)
+        #Pour start la game
         self.prochain_tour()
 
 
-        
-
-
-    def distribute_cards(self):
+    def distribute_cards(self,player):
         if len(self.pioche) > 0:
+            ancienne_main = self.all_players_cards[player]
+
             card_picked = self.pioche.pop()
-            return card_picked 
+            ancienne_main.append(card_picked)
+
+            self.all_players_cards[player] = ancienne_main
 
 
     def prochain_tour(self):
@@ -94,6 +95,46 @@ class Game:
         message_a_envoye += "\nTes actions possibles sont view (regarder les cartes de tous les joueurs), play (poser une carte), hint (give a hint to a player) and lookup (look at your list of hints)."
         playing_player_socket.sendall(message_a_envoye.encode())
 
+
+    def valid_card(self,played_card):
+        played_card_couleur = played_card[0]
+        played_card_nb = played_card[1]
+
+        if self.track[played_card_couleur] == played_card_nb-1:
+            return True
+        else:
+            return False
+
+
+    def poser_carte(self,player_name,played_card_nb):
+
+        played_card = game.all_players_cards[player_name][played_card_nb-1]
+
+        print(f"{player_name} played the card: {played_card}.")
+        
+        self.remove_card(player_name,played_card_nb)
+
+        if self.valid_card(played_card):
+
+            self.track[played_card[0]] += 1
+            print(f"{player_name} was correct.")
+
+            self.distribute_cards(player_name)
+
+        else:
+
+            self.fuse_token.value -= 1
+            print(f"{player_name} was wrong, you loose 1 fuse token. You have {self.fuse_token.value} left.")
+            self.distribute_cards(player_name)
+
+
+
+    def remove_card(self,player,index):
+        ancienne_main = self.all_players_cards[player]
+
+        ancienne_main.pop(index)
+
+        self.all_players_cards[player] = ancienne_main
 
 
 
@@ -136,6 +177,12 @@ def client_handler(s, a):
                 sent_info = info_string.encode()
                 s.sendall(sent_info)
 
+            #pose une carte
+            elif("play" in player_action.lower()):
+                card_played_nb = int(player_action[-1])
+
+                game.poser_carte(client_playername,card_played_nb)
+            
             game.prochain_tour()
 
                 
