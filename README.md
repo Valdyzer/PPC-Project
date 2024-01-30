@@ -20,9 +20,11 @@ L'objectif principal de ce projet est de démontrer comment la programmation par
 
 1. Clonez le dépôt : `git clone https://github.com/Valdyzer/PPC-Project.git`
 2. Accédez au répertoire du projet : `cd PPC-Project`
+3. N'oubliez pas d'installer sysv_ipc avec `pip install sysv_ipc`
 
 ## Utilisation
 
 1. Exécutez le serveur : `python game.py`
 2. Exécutez les joueurs : `python player.py`
 3. Suivez les instructions pour participer à la simulation du jeu.
+
