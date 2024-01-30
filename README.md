@@ -24,5 +24,5 @@ L'objectif principal de ce projet est de démontrer comment la programmation par
 ## Utilisation
 
 1. Exécutez le serveur : `python game.py`
-2. Exécutez les joueurs : `python testclient.py`
+2. Exécutez les joueurs : `python player.py`
 3. Suivez les instructions pour participer à la simulation du jeu.
