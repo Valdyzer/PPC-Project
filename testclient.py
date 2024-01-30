@@ -2,6 +2,7 @@
 import socket
 import art
 from colorama import init, Fore
+import re
 
 
 def view_color(tab):
@@ -17,6 +18,32 @@ def view_color(tab):
         print(Fore.WHITE + "\t" + tab[1], end="")
     else:
         return
+    
+
+def treat_view(msg):
+
+    #divide into sentences for each player
+    lines = msg.split("\n")
+
+    #remove the empty last line
+    lines.pop()
+
+    #search for something starting and ending with () and has a string then , then an int
+    pattern = re.compile(r"\('(.*?)', (\d+)\)")
+
+    for line in lines:
+
+        parts = line.split(":")
+
+        matches = pattern.findall(parts[1])
+
+        print(f"{parts[0]} : ")
+
+        for match in matches:
+            view_color(match)
+
+        print(Fore.RESET + "")
+
 
 
 
@@ -53,24 +80,13 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
 
             if action == "view":
                 client_socket.sendall(action.encode())
-                while True:
-                    received_info = client_socket.recv(1024).decode()
-                    if received_info == "STOP":
-                        print(Fore.RESET + "")
-                        break
-                    print(received_info, end="")
-                    while True:
-                        card = client_socket.recv(1024).decode()
-                        if card == "END":
-                            print(Fore.RESET + "")
-                            break
-                        card = card.split(",")
-                        view_color(card)
+
+                received_info = client_socket.recv(1024).decode()
+                treat_view(received_info)
 
 
             elif action == "play":
-                client_socket.sendall(action.encode())
-                carte = input("Quelle carte veut-tu jouer ? ")
+                carte = action + " " + input("Quelle carte veut-tu jouer ? ")
                 client_socket.sendall(carte.encode())
                 player_turn = False
 

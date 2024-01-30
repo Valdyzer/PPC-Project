@@ -67,7 +67,6 @@ class Game:
 
             print(f"To player {player[0]} are given: {self.all_players_cards[player[0]]}.")
 
-        print(self.all_players_cards)
         #Pour start la game
         self.prochain_tour()
 
@@ -110,7 +109,7 @@ class Game:
 
         played_card = game.all_players_cards[player_name][played_card_nb-1]
         print(f"{player_name} played the card: {played_card}.")
-        self.remove_card(player_name,played_card_nb)
+        self.remove_card(player_name,played_card_nb-1)
 
         if self.valid_card(played_card):
             self.track[played_card[0]] += 1
@@ -126,10 +125,11 @@ class Game:
 
     def remove_card(self,player,index):
         ancienne_main = self.all_players_cards[player]
-
+        print(ancienne_main)
         ancienne_main.pop(index)
-
+        print(ancienne_main)
         self.all_players_cards[player] = ancienne_main
+        print(self.all_players_cards[player])
 
 
 
@@ -165,27 +165,27 @@ def client_handler(s, a):
             # affiche les mains de tous les joueurs
             if(player_action.lower() == "view"):
                 print(f"Sending view info to {client_playername}")
+
                 info_string = ""
                 for player, cards in game.all_players_cards.items():
                     if player != client_playername:
-                        info_string = f"{player} has these cards : "
-                        sent_info = info_string.encode()
-                        s.sendall(sent_info)
-                        for i in range(len(game.all_players_cards[player])):
-                            info_cards = f"{game.all_players_cards[player][i][0]},{game.all_players_cards[player][i][1]}"
-                            sent_info = info_cards.encode()
-                            s.sendall(sent_info)
-                        s.sendall(f"END".encode())
-                s.sendall(f"STOP".encode())
+                        info_string += f"{player} has these cards : "
+
+                        for i in range(len(cards)):
+                            info_string += f"{game.all_players_cards[player][i]} "
+
+                        info_string += "\n"
+                print(info_string)
+                s.sendall(info_string.encode())
 
             # pose une carte
-            elif(player_action.lower() == "play"):
+            elif("play" in player_action.lower()):
 
-                card_played_nb = int(s.recv(1024).decode())
+                card_played_nb = int(player_action[-1])
                 game.poser_carte(client_playername, card_played_nb)
             
-            # gère la concurrence de l'ordre des joueurs
-            #if game.tour_nb.value == game.ready_player_list.index:
+                # gère la concurrence de l'ordre des joueurs
+                #if game.tour_nb.value == game.ready_player_list.index:
                 game.prochain_tour()
 
                 
