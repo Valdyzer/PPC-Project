@@ -72,9 +72,9 @@ def create_hint():
             hint_message += " " + input("Quel numéro? ")
             hint_message += " " + input("Quelles cartes sont concernées (séparées par une ,)? ")
             message_cree = True
-        if choix == 2:
-            hint_message += "couleur"
-            hint_message += " " + input("Quelle couleur (EN MAJUSCULE)? ")
+        elif choix == 2:
+            hint_message += " couleur"
+            hint_message += " " + input("Quelle couleur? ")
             hint_message += " " + input("Quelles cartes sont concernées (séparées par une ,)? ")
             message_cree = True
         else:
@@ -84,9 +84,58 @@ def create_hint():
     return hint_message, hint_type
 
 
+def treat_hint():
+    print("Hints that have been sent this round:")
+    hints_this_round = []
+
+    first_message = ""
+    t = -5
+    if mq.current_messages > 0:
+        first_message, t = mq.receive()
+        hints_this_round.append((first_message,t))
+
+        #send back the message loop condition
+        mq.send(first_message,type=t)
+
+    message = ""
+    t1 = -5
+    
+    #recuperer tt les messages unes seule fois
+    while mq.current_messages > 0:
+        message, t1 = mq.receive()
+        if message == first_message and t == t1:
+            break
+
+        else:
+            hints_this_round.append((message,t))
 
 
+    if len(hints_this_round) > 0:
+        
+        for hint in hints_this_round:
+            msg = hint[0].decode()
+            type = hint[1]
 
+            #check if the hint made a full circle if not resend same hint with -1 type
+            if type > 1:
+                new_type = type - 1
+                mq.send(msg,type=new_type)
+
+            #treatement du hint et transformation en phrase
+            elements = msg.split(" ")
+
+            #check si ce hint concerne ce joueur
+            if elements[0] == pseudo:
+                elements[0] = "Your"
+
+            phrase = ""
+            if elements[1] == "numero":
+                phrase = f"{elements[0]} only cards with number {elements[2]} are {elements[3]}."
+            elif elements[1] == "couleur":
+                phrase = f"{elements[0]} only {elements[2].lower()} cards are {elements[3]}."
+
+
+            print(phrase)
 
 init()  # initialisation de la librairie "colorama"
 pseudo = input("Input your player name: ")
@@ -125,7 +174,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         received_info = client_socket.recv(1024)
         print(received_info.decode())
         player_turn = True
-        
+        treat_hint()
         while player_turn:
 
             action = input("\nQuelle action choisis-tu ? ").lower()
@@ -142,9 +191,10 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
                 player_turn = False
 
             elif action == "hint":
-                hint_message, type = create_hint()
-                mq.send(hint_message.encode(),type)
-
+                hint_message, t = create_hint()
+                mq.send(hint_message.encode(),type=t)
+                client_socket.sendall(action.encode())
+                player_turn = False
 
 
             else:

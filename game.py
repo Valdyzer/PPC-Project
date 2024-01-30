@@ -135,11 +135,8 @@ class Game:
 
     def remove_card(self,player,index):
         ancienne_main = self.all_players_cards[player]
-        print(ancienne_main)
         ancienne_main.pop(index)
-        print(ancienne_main)
         self.all_players_cards[player] = ancienne_main
-        print(self.all_players_cards[player])
 
 
     def run_server(shared_memory):
@@ -204,6 +201,11 @@ def client_handler(s, a):
             
                 # gère la concurrence de l'ordre des joueurs
                 #if game.tour_nb.value == game.ready_player_list.index:
+                game.prochain_tour()
+
+            elif("hint" in player_action.lower()):
+
+                print(f"{client_playername} sent a hint.")
                 game.prochain_tour()
 
                 
