@@ -68,8 +68,10 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
                         view_color(card)
 
 
-            elif "play" in action:
+            elif action == "play":
                 client_socket.sendall(action.encode())
+                carte = input("Quelle carte veut-tu jouer ? ")
+                client_socket.sendall(carte.encode())
                 player_turn = False
 
             else:

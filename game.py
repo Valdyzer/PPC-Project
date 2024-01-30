@@ -106,23 +106,18 @@ class Game:
             return False
 
 
-    def poser_carte(self,player_name,played_card_nb):
+    def poser_carte(self, player_name, played_card_nb):
 
         played_card = game.all_players_cards[player_name][played_card_nb-1]
-
         print(f"{player_name} played the card: {played_card}.")
-        
         self.remove_card(player_name,played_card_nb)
 
         if self.valid_card(played_card):
-
             self.track[played_card[0]] += 1
             print(f"{player_name} was correct.")
-
             self.distribute_cards(player_name)
 
         else:
-
             self.fuse_token.value -= 1
             print(f"{player_name} was wrong, you loose 1 fuse token. You have {self.fuse_token.value} left.")
             self.distribute_cards(player_name)
@@ -153,7 +148,7 @@ def client_handler(s, a):
 
         player_action = "not empty"
 
-        #ready code
+        # ready code
         while player_action != "":
 
             player_action = s.recv(1024).decode()
@@ -163,11 +158,11 @@ def client_handler(s, a):
                 game.add_ready_player(client_playername,s)
                 break
 
-        #during game code
+        # during game code
         while player_action != "":
             player_action = s.recv(1024).decode()
 
-            #regade les mains de tous les joueurs
+            # affiche les mains de tous les joueurs
             if(player_action.lower() == "view"):
                 print(f"Sending view info to {client_playername}")
                 info_string = ""
@@ -183,16 +178,14 @@ def client_handler(s, a):
                         s.sendall(f"END".encode())
                 s.sendall(f"STOP".encode())
 
+            # pose une carte
+            elif(player_action.lower() == "play"):
 
-                
-
-            #pose une carte
-            elif("play" in player_action.lower()):
-                card_played_nb = int(player_action[-1])
-
-                game.poser_carte(client_playername,card_played_nb)
+                card_played_nb = int(s.recv(1024).decode())
+                game.poser_carte(client_playername, card_played_nb)
             
-            if game.tour_nb.value == game.ready_player_list.index:
+            # gère la concurrence de l'ordre des joueurs
+            #if game.tour_nb.value == game.ready_player_list.index:
                 game.prochain_tour()
 
                 
