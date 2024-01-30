@@ -47,6 +47,45 @@ def treat_view(msg):
         print(Fore.RESET + "")
 
 
+def create_hint():
+    hint_message = ""
+    liste_joueurs = shared_memory.get("liste_joueurs")
+    hint_type = len(liste_joueurs)
+    print("\nA qui voulez-vous donner un indice ?")
+    for player in liste_joueurs:
+        if player != pseudo:
+            print("-", player)
+
+    hint_message = input("\t")
+
+    while hint_message not in liste_joueurs:
+        hint_message = input("Ce n'est pas un nom de joueur! Rééssaie:  ")
+
+    print("\nDe quoi traite cet indice :\t1 - Un numéro\t 2 - Une couleur")
+
+    message_cree = False
+
+    while not message_cree:
+        choix = int(input("\t"))
+        if choix == 1:
+            hint_message += " numero"
+            hint_message += " " + input("Quel numéro? ")
+            hint_message += " " + input("Quelles cartes sont concernées (séparées par une ,)? ")
+            message_cree = True
+        if choix == 2:
+            hint_message += "couleur"
+            hint_message += " " + input("Quelle couleur (EN MAJUSCULE)? ")
+            hint_message += " " + input("Quelles cartes sont concernées (séparées par une ,)? ")
+            message_cree = True
+        else:
+            print("\nINCORRECT !!! Choisis parmis les paramètres proposés (indique son numéro)\n")
+  
+
+    return hint_message, hint_type
+
+
+
+
 
 
 init()  # initialisation de la librairie "colorama"
@@ -93,9 +132,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
 
             if action == "view":
                 client_socket.sendall(action.encode())
-                shared_memory= m.get_shared_memory() 
-                print(shared_memory)
-                print(list(shared_memory.get("liste_joueurs")))
                 received_info = client_socket.recv(1024).decode()
                 treat_view(received_info)
 
@@ -106,7 +142,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
                 player_turn = False
 
             elif action == "hint":
-                hint_message = ""
+                hint_message, type = create_hint()
+                mq.send(hint_message.encode(),type)
+
 
 
             else:
