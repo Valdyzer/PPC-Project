@@ -124,9 +124,13 @@ def treat_hint():
             #treatement du hint et transformation en phrase
             elements = msg.split(" ")
 
+            #save hint if the player is concerned
+            save_hint = False
+
             #check si ce hint concerne ce joueur
             if elements[0] == pseudo:
                 elements[0] = "Your"
+                save_hint = True
 
             phrase = ""
             if elements[1] == "numero":
@@ -134,13 +138,18 @@ def treat_hint():
             elif elements[1] == "couleur":
                 phrase = f"{elements[0]} only {elements[2].lower()} cards are {elements[3]}."
 
-
+            if save_hint:
+                hint_history.append(phrase)
+                
             print(phrase)
 
 init()  # initialisation de la librairie "colorama"
 pseudo = input("Input your player name: ")
+hint_history = []
+
 PORT = int(input("Put the game port: "))
 HOST = "localhost"
+game_running = True
 
 key = 1234
 mq = sysv_ipc.MessageQueue(key)
@@ -152,51 +161,81 @@ m.connect()
 shared_memory= m.get_shared_memory() 
 
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-    client_socket.connect((HOST, PORT))
-    client_socket.sendall(pseudo.encode())
-    action = "no"
-    while action.lower() != "yes":
 
-        action = input("Are you ready ? ").lower()
-        client_socket.sendall(action.encode())
+if __name__ == "__main__":
 
-    
-    art.tprint("\n\n\nHANNABIS","rnd-large")
-    print("\nHanabi est un jeu de cartes coopératif dans lequel les joueurs travaillent ensemble pour créer une suite complète de cartes de couleurs. Voici une brève explication des règles du jeu.\n")
-    print("Objectif : L'objectif principal est de jouer toutes les cartes dans l'ordre correct (de 1 à 5) et par couleur.")
-    print("Le jeu contient des cartes de cinq couleurs (rouge, jaune, vert, bleu, blanc) et des numéros de 1 à 5 pour chaque couleur. Chaque joueur reçoit une main de cinq cartes qu'il ne peut pas voir (Vous ne pouvez pas regarder vos propres cartes).")
-    print("Les joueurs peuvent donner des indices aux autres joueurs pour les aider à jouer leurs cartes. Les indices sont donnés sur la couleur ou le numéro d'une carte spécifique.")
-    print("Les joueurs peuvent jouer une carte de leur main, mais ils doivent suivre l'ordre numérique et par couleur. Si la carte est correctement jouée, elle s'ajoute à l'une des pile de couleur. Prêt ? C'EST PARTI !\n\n")
-    
-    while True:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+        client_socket.connect((HOST, PORT))
+        client_socket.sendall(pseudo.encode())
+        action = "no"
+        while action.lower() != "yes":
 
-        received_info = client_socket.recv(1024)
-        print(received_info.decode())
-        player_turn = True
-        treat_hint()
-        while player_turn:
+            action = input("Are you ready ? ").lower()
+            client_socket.sendall(action.encode())
 
-            action = input("\nQuelle action choisis-tu ? ").lower()
+        
+        art.tprint("\n\n\nHANNABIS","rnd-large")
+        print("\nHanabi est un jeu de cartes coopératif dans lequel les joueurs travaillent ensemble pour créer une suite complète de cartes de couleurs. Voici une brève explication des règles du jeu.\n")
+        print("Objectif : L'objectif principal est de jouer toutes les cartes dans l'ordre correct (de 1 à 5) et par couleur.")
+        print("Le jeu contient des cartes de cinq couleurs (rouge, jaune, vert, bleu, blanc) et des numéros de 1 à 5 pour chaque couleur. Chaque joueur reçoit une main de cinq cartes qu'il ne peut pas voir (Vous ne pouvez pas regarder vos propres cartes).")
+        print("Les joueurs peuvent donner des indices aux autres joueurs pour les aider à jouer leurs cartes. Les indices sont donnés sur la couleur ou le numéro d'une carte spécifique.")
+        print("Les joueurs peuvent jouer une carte de leur main, mais ils doivent suivre l'ordre numérique et par couleur. Si la carte est correctement jouée, elle s'ajoute à l'une des pile de couleur. Prêt ? C'EST PARTI !\n\n")
+        
+        while game_running:
 
-            if action == "view":
-                client_socket.sendall(action.encode())
-                received_info = client_socket.recv(1024).decode()
-                treat_view(received_info)
+            received_info = client_socket.recv(1024)
+            print(received_info)
 
+            if received_info.decode() != "ENDOFGAMEWIN" and received_info.decode() != "ENDOFGAMELOSS":
+                print(received_info.decode())
 
-            elif action == "play":
-                carte = action + " " + input("Quelle carte veut-tu jouer ? ")
-                client_socket.sendall(carte.encode())
-                player_turn = False
+                player_turn = True
+                treat_hint()
+                while player_turn:
 
-            elif action == "hint":
-                hint_message, t = create_hint()
-                mq.send(hint_message.encode(),type=t)
-                client_socket.sendall(action.encode())
-                player_turn = False
+                    action = input("\nQuelle action choisis-tu ? ").lower()
+
+                    if action == "view":
+                        client_socket.sendall(action.encode())
+                        received_info = client_socket.recv(1024).decode()
+
+                        treat_view(received_info)
 
 
-            else:
-                print("INCORRECT !! Choisissez une des actions proposées ci-dessus.")
-                continue
+                    elif action == "play":
+                        carte = action + " " + input("Quelle carte veut-tu jouer ? ")
+                        client_socket.sendall(carte.encode())
+                        player_turn = False
+
+                    elif action == "hint":
+                        info_token = shared_memory.get("information_tokens")
+
+                        if info_token > 0:
+                            hint_message, t = create_hint()
+                            shared_memory.update({"information_tokens":info_token-1})
+                            mq.send(hint_message.encode(),type=t)
+                            client_socket.sendall(action.encode())
+                            player_turn = False
+                        else:
+                            print("There is no info tokens left!!!!")
+
+                    elif action == "lookup":
+                        print("Here is your hints history : ")
+                        
+                        for line in hint_history:
+                            print("\t"+line)
+                        
+
+                    else:
+                        print("INCORRECT !! Choisissez une des actions proposées ci-dessus.")
+                        continue
+
+
+            elif received_info.decode() == "ENDOFGAMEWIN":
+                print("You won!")
+                game_running = False
+
+            elif received_info.decode() == "ENDOFGAMELOSS":
+                print("You lost!")
+                game_running = False
+                
