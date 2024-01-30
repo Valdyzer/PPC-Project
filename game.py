@@ -1,8 +1,9 @@
 import socket
 import random
 from multiprocessing import Process, Value, Manager
+from multiprocessing.managers import BaseManager
 from threading import Thread
-import pickle
+import sysv_ipc
 import time
 
 COULEURS = ["ROUGE", "BLEU", "VERT", "JAUNE", "BLANC"]
@@ -22,6 +23,7 @@ class Game:
         self.ready_player_list = manager.list()
         self.host = "Localhost"
         self.port = 0
+        self.shared_memory = {"game_status": "Starting", "liste_joueurs": [], "information_tokens": 0, "fuse_tokens": 3, "construction": {}}
 
         self.set_up_server()
 
@@ -66,6 +68,12 @@ class Game:
 
 
             print(f"To player {player[0]} are given: {self.all_players_cards[player[0]]}.")
+
+
+        self.shared_memory.update({"game_status":"Playing"})
+        self.shared_memory.update({"liste_joueurs":list(game.player_list)})
+        self.shared_memory.update({"information_tokens":game.info_token})
+        self.shared_memory.update({"construction":dict(game.track)})
 
         #Pour start la game
         self.prochain_tour()
@@ -115,11 +123,13 @@ class Game:
             self.track[played_card[0]] += 1
             print(f"{player_name} was correct.")
             self.distribute_cards(player_name)
+            self.shared_memory.update({"construction":dict(game.track)})
 
         else:
             self.fuse_token.value -= 1
             print(f"{player_name} was wrong, you loose 1 fuse token. You have {self.fuse_token.value} left.")
             self.distribute_cards(player_name)
+            self.shared_memory.update({"fuse_tokens":self.fuse_token})
 
 
 
@@ -130,6 +140,14 @@ class Game:
         print(ancienne_main)
         self.all_players_cards[player] = ancienne_main
         print(self.all_players_cards[player])
+
+
+    def run_server(shared_memory):
+        manager = BaseManager(address=('localhost', 50000), authkey=b'test')
+        server_shared_memory = shared_memory
+        manager.get_shared_memory = lambda: server_shared_memory
+        server = manager.get_server()
+        server.serve_forever()
 
 
 
@@ -197,9 +215,17 @@ def client_handler(s, a):
 
 
 
+
 with Manager() as manager:
 
+    key = 1234
+    mq = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
+
     game = Game(manager)
+
+    BaseManager.register('get_shared_memory', callable=lambda: game.shared_memory)
+    server_thread = Thread(target=game.run_server)
+    server_thread.start()
 
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
@@ -217,8 +243,8 @@ with Manager() as manager:
                     client_socket, address = server_socket.accept()
 
                     print("Number of players: ", game.nb_players.value)
-                    p = Process(target=client_handler, args=(client_socket, address))
-                    p.start()
+                    t = Thread(target=client_handler, args=(client_socket, address))
+                    t.start()
             
             except BlockingIOError:
                 pass

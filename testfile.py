@@ -1,43 +1,30 @@
-import re
-from colorama import init, Fore
+from multiprocessing.managers import BaseManager
+import threading
+import time
 
-def view_color(tab):
-    if tab[0]=="ROUGE":
-        print(Fore.RED + "\t" + tab[1], end="")
-    elif tab[0]=="BLEU":
-        print(Fore.BLUE + "\t" + tab[1], end="")
-    elif tab[0]=="VERT":
-        print(Fore.GREEN + "\t" + tab[1], end="")
-    elif tab[0]=="JAUNE":
-        print(Fore.YELLOW + "\t" + tab[1], end="")
-    elif tab[0]=="BLANC":
-        print(Fore.WHITE + "\t" + tab[1], end="")
-    else:
-        return
+shared_memory = shared_memory = {"game_status": "Starting", "liste_joueurs": [1,5,3,4], "information_tokens": 0, "fuse_tokens": 3, "construction": {}}
 
+class RemoteManager(BaseManager):
+    pass
 
+RemoteManager.register('get_shared_memory', callable=lambda: shared_memory)
 
-init()
-string = "asa has these cards : ('ROUGE', 1) ('BLEU', 4) ('JAUNE', 5) ('BLEU', 5) ('ROUGE', 3) \nasa has these cards : ('ROUGE', 1) ('BLEU', 4) ('ROUGE', 5) ('BLEU', 5) ('ROUGE', 3)\n"
+def run_server():
+    manager = RemoteManager(address=('localhost', 50000), authkey=b'bob')
+    server_shared_memory = shared_memory
+    manager.get_shared_memory = lambda: server_shared_memory
+    server = manager.get_server()
+    print("Server running on localhost:50000")
+    server.serve_forever()
 
-lines = string.split("\n")
+if __name__ == '__main__':
+    server_thread = threading.Thread(target=run_server)
+    server_thread.start()
 
-#remove the empty last line
-lines.pop()
-
-#search for something starting and ending with () and has a string then , then an int
-pattern = re.compile(r"\('(.*?)', (\d+)\)")
-
-for line in lines:
-
-    parts = line.split(":")
-
-    matches = pattern.findall(parts[1])
-
-    print(f"{parts[0]} : ")
-
-    for match in matches:
-        view_color(match)
-
-    print(Fore.RESET + "")
-
+    # Perform other tasks while the server is running
+    try:
+        while True:
+            time.sleep(1)  # Perform other tasks here
+            print("Performing other tasks...")
+    except KeyboardInterrupt:
+        print("Server terminated by user.")
