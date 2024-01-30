@@ -1,6 +1,7 @@
 import socket
 import random
 from multiprocessing import Process, Value, Manager
+from threading import Thread
 import pickle
 import time
 
@@ -183,7 +184,8 @@ def client_handler(s, a):
 
                 game.poser_carte(client_playername,card_played_nb)
             
-            game.prochain_tour()
+            if game.tour_nb.value == game.ready_player_list.index:
+                game.prochain_tour()
 
                 
 

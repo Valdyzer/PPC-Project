@@ -18,7 +18,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         client_socket.sendall(action.encode())
 
     
-    art.tprint("\n\n\nHANNABIS","rnd-xlarge")
+    art.tprint("\n\n\nHANNABIS","rnd-large")
     print("\nHanabi est un jeu de cartes coopératif dans lequel les joueurs travaillent ensemble pour créer une suite complète de cartes de couleurs. Voici une brève explication des règles du jeu.\n")
     print("Objectif : L'objectif principal est de jouer toutes les cartes dans l'ordre correct (de 1 à 5) et par couleur.")
     print("Le jeu contient des cartes de cinq couleurs (rouge, jaune, vert, bleu, blanc) et des numéros de 1 à 5 pour chaque couleur. Chaque joueur reçoit une main de cinq cartes qu'il ne peut pas voir (Vous ne pouvez pas regarder vos propres cartes).")
