@@ -17,7 +17,6 @@ class Game:
         self.pioche = manager.list()
         self.all_players_cards = manager.dict()
         self.game_status = "WaitingForPlayers"
-
         self.nb_players = Value("i",0)
         self.player_list = manager.list()
         self.ready_player_list = manager.list()
@@ -174,9 +173,18 @@ def client_handler(s, a):
                 info_string = ""
                 for player, cards in game.all_players_cards.items():
                     if player != client_playername:
-                        info_string += f"{player} hase these cards {game.all_players_cards[player]}.\n"
-                sent_info = info_string.encode()
-                s.sendall(sent_info)
+                        info_string = f"{player} has these cards : "
+                        sent_info = info_string.encode()
+                        s.sendall(sent_info)
+                        for i in range(len(game.all_players_cards[player])):
+                            info_cards = f"{game.all_players_cards[player][i][0]},{game.all_players_cards[player][i][1]}"
+                            sent_info = info_cards.encode()
+                            s.sendall(sent_info)
+                        s.sendall(f"END".encode())
+                s.sendall(f"STOP".encode())
+
+
+                
 
             #pose une carte
             elif("play" in player_action.lower()):
